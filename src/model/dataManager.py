@@ -36,14 +36,14 @@ class DataManager(object):
                 except json.JSONDecodeError:
                     print("Bro we got some issue with the json encoding")
 
-    def _tokenize(self):
+    def tokenize(self):
         for query in self.queries:
             self.tokenizedQueries[query["_id"]] = word_tokenize(query["text"])
 
         for doc in self.documents:
             self.tokenizedDocuments[doc["_id"]] = word_tokenize(doc["title"] + " " + doc["text"])
 
-    def _getSparseScores(self) -> dict[str, ndarray[tuple[str, float]]]:
+    def getSparseScores(self) -> dict[str, ndarray[tuple[str, float]]]:
         bm25 = BM25Okapi(list(self.tokenizedDocuments.values()))
         solution: dict[str, ndarray[tuple[str, float]]] = {}
         documentKeys = list(self.tokenizedDocuments.keys())
@@ -56,6 +56,8 @@ class DataManager(object):
 
 base: str = "data/"
 
-manager: DataManager = DataManager(base + "queries.jsonl", base + "corpus.jsonl", base + "qrels/test.tsv")
+manager: DataManager = DataManager(base + "queries.jsonl", base + "corpus.jsonl", base + "test.tsv")
 
-print(manager.queries)
+manager.tokenize()
+
+print(manager.getSparseScores())
