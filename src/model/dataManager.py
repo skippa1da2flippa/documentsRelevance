@@ -4,6 +4,10 @@ from numpy import ndarray, array, append, inner, argsort, flip
 from pandas import DataFrame, read_csv
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
+import matplotlib.pyplot as plt
+import torch
+
+from src.model.resultManager import resultStorer
 
 
 class DataManager(object):
@@ -79,7 +83,10 @@ class DataManager(object):
 
     # this method should not be here
     def doDenseThing(self) -> dict[str, ndarray[tuple[str, float]]]:
-        model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+        model = SentenceTransformer(
+            'sentence-transformers/all-MiniLM-L6-v2',
+            device="cuda" if torch.cuda.is_available() else "cpu"
+        )
         vectorizedDocs = model.encode(
             [f"{doc['title']} {doc['text']}" for doc in self._documents],
             convert_to_numpy=True,
@@ -87,12 +94,13 @@ class DataManager(object):
         solution: dict[str, ndarray[tuple[str, float]]] = {}
 
         for query in self._queries:
+            print("Im at the query: ", query["_id"])
             vectorizedQuery = model.encode(
                 query,
                 convert_to_numpy=True,
             )
 
-            solution[query["_id"]] = array(
+            solution["query" + query["_id"]] = array(
                 [(self._documents[idx]["_id"], inner(vectorizedQuery, vectorizedDocs[idx]))
                  for idx in range(0, len(self._documents))]
             )
@@ -102,7 +110,7 @@ class DataManager(object):
     # this method should not be here (make solution self.solution)
     def takeTopKPrime(self, solution: dict[str, ndarray[tuple[str, float]]], kPrime: int):
         for key in solution:
-            solution[key] = (solution[key][argsort(solution[:1])])[-kPrime:]
+            solution[key] = (solution[key][argsort(solution[key][:1])])[-kPrime:]  # TODO si rompe tutto qui
 
     # assuming these solutions have already gone through takeTopKPrime function
     def computeTopK(self, denseSolution: dict[str, ndarray[tuple[str, float]]],
@@ -122,33 +130,45 @@ class DataManager(object):
         solution: set[tuple[str, float]] = set()
         sparseIdx: int = 0
         denseIdx: int = 0
+        oldLen: int = 0
+        newLen: int = 0
 
         while (sparseIdx < len(sparseScore) or denseIdx < len(denseScore)) and k > 0:
-            majorityCondition: bool = denseScore[denseIdx][1] < sparseScore[sparseIdx][1]
+
             sparseCondition: bool = sparseIdx < len(sparseScore)
             denseCondition: bool = denseIdx < len(denseScore)
 
             if sparseCondition and denseCondition:
-                if majorityCondition:
+                oldLen = len(solution)
+                if denseScore[denseIdx][1] < sparseScore[sparseIdx][1]:
                     solution.add((denseScore[denseIdx][0], denseScore[denseIdx][1]))
                     denseIdx += 1
                 else:
                     solution.add((sparseScore[sparseIdx][0], sparseScore[sparseIdx][1]))
                     sparseIdx += 1
 
-                k -= 1
+                newLen = len(solution)
+
+                if oldLen != newLen:
+                    k -= 1
 
             elif sparseCondition:
                 while sparseIdx < len(sparseScore) and k > 0:
-                    k -= 1
+                    oldLen = len(solution)
                     solution.add((sparseScore[sparseIdx][0], sparseScore[sparseIdx][1]))
                     sparseIdx += 1
+                    newLen = len(solution)
+                    if oldLen != newLen:
+                        k -= 1
 
             else:
                 while denseIdx < len(denseScore) and k > 0:
-                    k -= 1
+                    oldLen = len(solution)
                     solution.add((denseScore[denseIdx][0], sparseScore[denseIdx][1]))
                     denseIdx += 1
+                    newLen = len(solution)
+                    if oldLen != newLen:
+                        k -= 1
 
         return flip(array(solution))
 
@@ -156,9 +176,20 @@ class DataManager(object):
         for index, row in self._solutions.iterrows():
             pass
 
+    def plotGraph(self, k: int, kPrimes: list[int], recalls: list[float]):
+        plt.plot(recalls)
+        plt.title("k: " + str(k))
+        plt.xlabel("k prime")
+        plt.ylabel("recall")
+        plt.show()
 
-base: str = "data/"
 
-manager: DataManager = DataManager(base + "queries.jsonl", base + "corpus.jsonl", base + "test.tsv", False)
+def saveDatas():
+    base: str = "data/"
+    manager: DataManager = DataManager(base + "queries.jsonl", base + "corpus.jsonl", base + "test.tsv")
+    struct1 = manager.getSparseScores()
+    struct2 = manager.doDenseThing()
+    resultStorer([struct1, struct2])
 
-print(manager.doDenseThing())
+
+saveDatas()
