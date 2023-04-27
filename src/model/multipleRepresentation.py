@@ -5,10 +5,12 @@ from numpy import ndarray, array, append, inner, argsort, flip
 from sentence_transformers import SentenceTransformer
 import torch
 
+from src.model.resultManager import resultStorer
+
 
 class MultipleRepresentation:
-    def __init__(self, queryPath: str, documentsPath: str, solutionPath, autoTokenize: bool = True):
-        self.dataManager: DataManager = DataManager(queryPath, documentsPath, solutionPath, autoTokenize)
+    def __init__(self, queryPath: str, documentsPath: str, solutionPath):
+        self.dataManager: DataManager = DataManager(queryPath, documentsPath, solutionPath)
         self._tokenizedQueries: dict[str, list[str]] = {}
         self._tokenizedDocuments: dict[str, list[str]] = {}
 
@@ -20,6 +22,7 @@ class MultipleRepresentation:
             self._tokenizedDocuments[doc["_id"]] = word_tokenize(doc["title"] + " " + doc["text"])
 
     def getSparseScores(self) -> dict[str, ndarray[tuple[str, float]]]:
+        self._sparseTokenization()
         bm25 = BM25Okapi(list(self._tokenizedDocuments.values()))
         solution: dict[str, ndarray[tuple[str, float]]] = {}
         documentKeys = list(self._tokenizedDocuments.keys())
@@ -54,3 +57,11 @@ class MultipleRepresentation:
             )
 
         return solution
+
+
+def saveDatas():
+    base: str = "data/"
+    manager = MultipleRepresentation(base + "queries.jsonl", base + "corpus.jsonl", base + "test.tsv")
+    struct1 = manager.getSparseScores()
+    struct2 = manager.getDenseScores()
+    resultStorer([struct1, struct2])
