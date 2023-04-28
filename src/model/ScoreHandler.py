@@ -51,6 +51,8 @@ class ScoreHandler:
 
             sort(self._groundTruth[queryId])
 
+        print()
+
     def _sortSparseDense(self):
         for queryId in self._sparseResult:
             sort(self._sparseResult[queryId])
