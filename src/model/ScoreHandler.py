@@ -39,13 +39,15 @@ class ScoreHandler:
 
     def _computeGroundTruth(self):
         for queryId in self._sparseResult:
-            self._groundTruth[queryId] = array([])
             for idx in range(0, len(self._sparseResult[queryId])):
-                sparseDenseSum: float = self._sparseResult[queryId][idx][1] + \
-                                        self._denseResult[queryId][idx][1]
+                sparseDenseSum: float = float(self._sparseResult[queryId][idx][1]) + \
+                                        float(self._denseResult[queryId][idx][1])
                 sparseDenseDocId: str = self._denseResult[queryId][idx][0]
 
-                self._groundTruth[queryId] = append(self._groundTruth[queryId], (sparseDenseDocId, sparseDenseSum))
+                if idx == 0:
+                    self._groundTruth[queryId] = array([(sparseDenseDocId, sparseDenseSum)])
+                else:
+                    self._groundTruth[queryId] = append(self._groundTruth[queryId], [(sparseDenseDocId, sparseDenseSum)], axis=0)
 
             sort(self._groundTruth[queryId])
 
