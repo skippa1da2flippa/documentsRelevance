@@ -47,7 +47,7 @@ class MultipleRepresentation:
         for query in self.dataManager.getQueries():
             print("Im at the query: ", query["_id"])
             vectorizedQuery = model.encode(
-                query,
+                query["text"],
                 convert_to_numpy=True,
             )
 
