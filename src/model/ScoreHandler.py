@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-from numpy import ndarray, flip, argsort, union1d, intersect1d, append, where, mean
+from numpy import ndarray, flip, argsort, union1d, intersect1d, append, where, mean, array
 
 from src.model.resultManager import resultGetter
 
@@ -39,9 +39,13 @@ class ScoreHandler:
 
     def _computeGroundTruth(self):
         for queryId in self._sparseResult:
+            self._groundTruth[queryId] = array([])
             for idx in range(0, len(self._sparseResult[queryId])):
-                self._groundTruth[queryId][idx][1] = self._sparseResult[queryId][idx][1] + \
-                                                     self._denseResult[queryId][idx][1]
+                sparseDenseSum: float = self._sparseResult[queryId][idx][1] + \
+                                        self._denseResult[queryId][idx][1]
+                sparseDenseDocId: str = self._denseResult[queryId][idx][0]
+
+                self._groundTruth[queryId] = append(self._groundTruth[queryId], (sparseDenseDocId, sparseDenseSum))
 
             sort(self._groundTruth[queryId])
 
@@ -89,3 +93,4 @@ l = resultGetter()
 
 scoreHandler = ScoreHandler(l[0], l[1])
 
+print()
