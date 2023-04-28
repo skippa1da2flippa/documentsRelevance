@@ -7,6 +7,10 @@ import torch
 
 from src.model.resultManager import resultStorer
 
+"""
+    This class compute the score for both sparse and dense vectors representation
+"""
+
 
 class MultipleRepresentation:
     def __init__(self, queryPath: str, documentsPath: str, solutionPath):
@@ -14,6 +18,9 @@ class MultipleRepresentation:
         self._tokenizedQueries: dict[str, list[str]] = {}
         self._tokenizedDocuments: dict[str, list[str]] = {}
 
+    """
+        Method which tokenizes all the queries and documents inside the dataset
+    """
     def _sparseTokenization(self):
         for query in self.dataManager.getQueries():
             self._tokenizedQueries[query["_id"]] = word_tokenize(query["text"])
@@ -21,6 +28,9 @@ class MultipleRepresentation:
         for doc in self.dataManager.getDocuments():
             self._tokenizedDocuments[doc["_id"]] = word_tokenize(doc["title"] + " " + doc["text"])
 
+    """
+        getSparseScores compute the scores for the sparse representation by using bm25 index
+    """
     def getSparseScores(self) -> dict[str, ndarray[tuple[str, float]]]:
         self._sparseTokenization()
         bm25 = BM25Okapi(list(self._tokenizedDocuments.values()))
@@ -33,6 +43,9 @@ class MultipleRepresentation:
 
         return solution
 
+    """
+        this method return the score related to the dense representation using inner product
+    """
     def getDenseScores(self) -> dict[str, ndarray[tuple[str, float]]]:
         model = SentenceTransformer(
             'sentence-transformers/all-MiniLM-L6-v2',

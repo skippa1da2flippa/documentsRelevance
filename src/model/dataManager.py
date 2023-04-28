@@ -3,6 +3,10 @@ from nltk import word_tokenize
 from numpy import ndarray, array, append, inner, argsort, flip
 from pandas import DataFrame, read_csv
 
+"""
+    Class implementing methods for fetching the dataset from a file 
+"""
+
 
 class DataManager(object):
     def __init__(self, queryPath: str, documentsPath: str, solutionPath):
@@ -31,7 +35,7 @@ class DataManager(object):
                     json_data = json.loads(obj)
                     doOperation(json_data)
                 except json.JSONDecodeError:
-                    print("Bro we got some issue with the json encoding")
+                    print("We got some issue with the json encoding")
 
     def getQueries(self) -> ndarray[dict[str, str]]:
         return self._queries
@@ -41,8 +45,3 @@ class DataManager(object):
 
     def getSolutions(self) -> DataFrame:
         return self._solutions
-
-
-
-
-

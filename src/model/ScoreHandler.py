@@ -9,6 +9,11 @@ def sort(arr: ndarray[tuple[str, float]]):
     arr = arr[sortedIndices]
 
 
+"""
+    Class representing the scoring operation given some sparse and dense results 
+"""
+
+
 class ScoreHandler:
     def __init__(self, sparseResult: dict[str, ndarray[tuple[str, float]]],
                  denseResult: dict[str, ndarray[tuple[str, float]]]):
@@ -30,12 +35,21 @@ class ScoreHandler:
         plt.ylabel("recall")
         plt.show()
 
+    """
+        This method takes the first k best samples from the ground truth and return just the docId's related to them
+    """
+
     def _takeKSamples(self, k: int) -> dict[str, ndarray[str]]:
         kSamplesDict: dict[str, ndarray[str]] = {}
         for queryId in self._groundTruth:
             kSamplesDict[queryId] = self._groundTruth[queryId][:k, 0]
 
         return kSamplesDict
+
+    """
+        This method compute the ground truth by adding for each document sparse and dense representation. 
+        This operation is performed for each query
+    """
 
     def _computeGroundTruth(self):
         for queryId in self._sparseResult:
@@ -47,7 +61,8 @@ class ScoreHandler:
                 if idx == 0:
                     self._groundTruth[queryId] = array([(sparseDenseDocId, sparseDenseSum)])
                 else:
-                    self._groundTruth[queryId] = append(self._groundTruth[queryId], [(sparseDenseDocId, sparseDenseSum)], axis=0)
+                    self._groundTruth[queryId] = append(self._groundTruth[queryId],
+                                                        [(sparseDenseDocId, sparseDenseSum)], axis=0)
 
             sort(self._groundTruth[queryId])
 
@@ -57,6 +72,10 @@ class ScoreHandler:
         for queryId in self._sparseResult:
             sort(self._sparseResult[queryId])
             sort(self._denseResult[queryId])
+
+    """
+        _computeSPrime generates the model output 
+    """
 
     def _computeSPrime(self, k: int, kPrime: int) -> dict[str, ndarray[str]]:
         sPrimeScore: dict[str, ndarray[tuple[str, float]]] = {}
@@ -83,6 +102,10 @@ class ScoreHandler:
                 kKPrimeMean: float = self._recall[k][kPrime][:, 1].mean()
                 experimentResult[k] = append(experimentResult[k], (kPrime, kKPrimeMean))
 
+    """
+        This method computes the recalls of all the queries for all the possible k and kPrimes
+    """
+
     def _computeRecalls(self):
         for k in range(0, 10000):
             for kPrime in range(k, len(self._sparseResult["query1"])):
@@ -96,5 +119,3 @@ class ScoreHandler:
 l = resultGetter()
 
 scoreHandler = ScoreHandler(l[0], l[1])
-
-print()
