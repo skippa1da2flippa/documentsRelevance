@@ -1,12 +1,11 @@
 from matplotlib import pyplot as plt
-from numpy import ndarray, flip, argsort, union1d, intersect1d, append, where, mean, array
-
-from src.model.resultManager import resultGetter
+from numpy import ndarray, flip, argsort, union1d, intersect1d, append, where, array
 
 
 def sort(arr: ndarray[tuple[str, float]]):
-    sortedIndices = flip(argsort(arr[:, 1]))
-    arr = arr[sortedIndices]
+    if arr.size:
+        sortedIndices = flip(argsort(arr[:, 1]))
+        arr = arr[sortedIndices]
 
 
 """
@@ -89,8 +88,8 @@ class ScoreHandler:
             for docId in sPrimeSample[queryId]:
                 rightIdx: int = where(self._groundTruth[queryId][:, 0] == docId)[0][0]
                 score: float = self._groundTruth[queryId][rightIdx][1]
-                if sPrimeScore[queryId].size() > 0:
-                    sPrimeScore[queryId] = append(sPrimeScore[queryId], (docId, score))
+                if sPrimeScore[queryId].size > 0:
+                    sPrimeScore[queryId] = append(sPrimeScore[queryId], (docId, score), axis=0)
                 else:
                     sPrimeScore[queryId] = array([(docId, score)])
 
@@ -108,8 +107,8 @@ class ScoreHandler:
             experimentResult[k] = array([])
             for kPrime in self._recall[k]:
                 kKPrimeMean: float = self._recall[k][kPrime][:, 1].mean()
-                if experimentResult[k].size() > 0:
-                    experimentResult[k] = append(experimentResult[k], (kPrime, kKPrimeMean))
+                if experimentResult[k].size > 0:
+                    experimentResult[k] = append(experimentResult[k], (kPrime, kKPrimeMean), axis=0)
                 else:
                     experimentResult[k] = array([(kPrime, kKPrimeMean)])
 
@@ -124,12 +123,12 @@ class ScoreHandler:
             for kPrime in range(k, len(self._sparseResult["query1"])):
                 modelTruthDict: dict[str, ndarray[str]] = self._computeSPrime(k, kPrime)
                 righteousTruthDict: dict[str, ndarray[str]] = self._takeKSamples(k)
+                self._recall[k][kPrime] = array([])
                 for queryId in modelTruthDict:
                     recall: float = len(intersect1d(modelTruthDict[queryId], righteousTruthDict[queryId])) / k
-                    self._recall[k][kPrime] = append(self._recall[k][kPrime], (queryId, recall))
-
-
-
-
+                    if self._recall[k][kPrime].size:
+                        self._recall[k][kPrime] = append(self._recall[k][kPrime], (queryId, recall), axis=0)
+                    else:
+                        self._recall[k][kPrime] = array([(queryId, recall)])
 
 
