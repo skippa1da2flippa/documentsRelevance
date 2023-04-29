@@ -66,15 +66,15 @@ class ScoreHandler:
 
             sort(self._groundTruth[queryId])
 
-        print()
-
     def _sortSparseDense(self):
         for queryId in self._sparseResult:
             sort(self._sparseResult[queryId])
             sort(self._denseResult[queryId])
 
     """
-        _computeSPrime generates the model output 
+        _computeSPrime generates the model output by first taking the best k' from the dense and the sparse 
+        representation, after that a union operation is applied to the best k's. Lastly the union is sorted and the best
+        k samples are returned
     """
 
     def _computeSPrime(self, k: int, kPrime: int) -> dict[str, ndarray[str]]:
@@ -85,28 +85,41 @@ class ScoreHandler:
                                             self._denseResult[queryId][:kPrime, 0])
 
         for queryId in sPrimeSample:
+            sPrimeScore[queryId] = array([])
             for docId in sPrimeSample[queryId]:
                 rightIdx: int = where(self._groundTruth[queryId][:, 0] == docId)[0][0]
                 score: float = self._groundTruth[queryId][rightIdx][1]
-                sPrimeScore[queryId] = append(sPrimeScore[queryId], (docId, score))
+                if sPrimeScore[queryId].size() > 0:
+                    sPrimeScore[queryId] = append(sPrimeScore[queryId], (docId, score))
+                else:
+                    sPrimeScore[queryId] = array([(docId, score)])
 
             sort(sPrimeScore[queryId])
             sPrimeSample[queryId] = sPrimeScore[queryId][:k, 0]
 
         return sPrimeSample
 
+    """
+        This methods compute the mean for each k, k' given all the queries results
+    """
     def _computeMean(self):
         experimentResult: dict[int, ndarray[tuple[int, float]]] = {}
         for k in self._recall:
+            experimentResult[k] = array([])
             for kPrime in self._recall[k]:
                 kKPrimeMean: float = self._recall[k][kPrime][:, 1].mean()
-                experimentResult[k] = append(experimentResult[k], (kPrime, kKPrimeMean))
+                if experimentResult[k].size() > 0:
+                    experimentResult[k] = append(experimentResult[k], (kPrime, kKPrimeMean))
+                else:
+                    experimentResult[k] = array([(kPrime, kKPrimeMean)])
+
+        return experimentResult
 
     """
         This method computes the recalls of all the queries for all the possible k and kPrimes
     """
 
-    def _computeRecalls(self):
+    def computeRecalls(self):
         for k in range(0, 10000):
             for kPrime in range(k, len(self._sparseResult["query1"])):
                 modelTruthDict: dict[str, ndarray[str]] = self._computeSPrime(k, kPrime)
@@ -116,6 +129,7 @@ class ScoreHandler:
                     self._recall[k][kPrime] = append(self._recall[k][kPrime], (queryId, recall))
 
 
-l = resultGetter()
 
-scoreHandler = ScoreHandler(l[0], l[1])
+
+
+

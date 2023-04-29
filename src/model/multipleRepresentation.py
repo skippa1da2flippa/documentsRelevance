@@ -1,14 +1,14 @@
 from src.model.dataManager import DataManager
 from nltk import word_tokenize
 from rank_bm25 import BM25Okapi
-from numpy import ndarray, array, append, inner, argsort, flip
+from numpy import ndarray, array, inner
 from sentence_transformers import SentenceTransformer
 import torch
-
+import re
 from src.model.resultManager import resultStorer
 
 """
-    This class compute the score for both sparse and dense vectors representation
+    This class computes the score for both sparse and dense vectors representation
 """
 
 
@@ -23,10 +23,12 @@ class MultipleRepresentation:
     """
     def _sparseTokenization(self):
         for query in self.dataManager.getQueries():
-            self._tokenizedQueries[query["_id"]] = word_tokenize(query["text"])
+            queryText: str = re.sub(r'[^\w\s]', '', query["text"])
+            self._tokenizedQueries[query["_id"]] = word_tokenize(queryText)
 
         for doc in self.dataManager.getDocuments():
-            self._tokenizedDocuments[doc["_id"]] = word_tokenize(doc["title"] + " " + doc["text"])
+            docCorpus: str = re.sub(r'[^\w\s]', '', doc["title"] + " " + doc["text"])
+            self._tokenizedDocuments[doc["_id"]] = word_tokenize(docCorpus)
 
     """
         getSparseScores compute the scores for the sparse representation by using bm25 index
